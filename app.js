@@ -12,7 +12,7 @@ var viewDataRouter = require('./routes/api/rentalData');
 var app = express();
 
 app.use(cors({
-    origin: 'http://localhost:5000',
+    origin: process.env.CLIENT_URL,
     methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
 }))
 
