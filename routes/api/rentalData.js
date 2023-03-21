@@ -8,8 +8,13 @@ let rentalData = require('../../public/json/rentalData.json')
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    console.log('i ran');
+ 
+    setTimeout(() => {
+        console.log('i ran');
     res.status(200).json(rentalData);
+      }, 1000);
+      
+   
 });
 
 module.exports = router;

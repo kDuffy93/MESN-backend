@@ -11,7 +11,10 @@ var viewDataRouter = require('./routes/api/rentalData');
 
 var app = express();
 
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:5000',
+    methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
+}))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
