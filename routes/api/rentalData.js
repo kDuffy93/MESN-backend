@@ -1,4 +1,5 @@
 var express = require('express');
+
 var router = express.Router();
 //let rentalData = require('../../public/json/rentalData.json')
 const RentalData = require("../../models/rentalData");
