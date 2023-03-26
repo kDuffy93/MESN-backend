@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "node ./bin/www"
+    "dev": "nodemon ./bin/www"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
@@ -12,6 +12,13 @@
     "ejs": "~2.6.1",
     "express": "~4.16.1",
     "http-errors": "~1.6.3",
-    "morgan": "~1.9.1"
+    "mongodb": "^5.1.0",
+    "mongoose": "^7.0.3",
+    "morgan": "~1.9.1",
+    "passport": "^0.6.0",
+    "passport-http": "^0.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }
