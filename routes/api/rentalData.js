@@ -16,6 +16,9 @@ const AgSecureListings = require("../../models/agSecureListings");
 
 /* GET home page. */
 router.get("/", async function (req, res, next) {
+
+const rentalDataSet = new Set();
+
   let rentalData = await RentalData.find({});
   setTimeout(() => {
     //console.log("i ran");
@@ -42,69 +45,49 @@ router.post("/sample", async (req, res, next) => {
   let rentalData = await RentalData.find({});
   //console.log("i ran after posting");
   res.status(200).json(rentalData); */
-console.log("i ran after posting at sample");
+  //console.log("i ran after posting at sample");
   getAGSecureData();
 });
 
 let getAGSecureData = async () => {
   let baseURL = "https://www.agsecure.ca";
   const cities = [
-    {
-      name: "Alliston",
-      municipality: "New Tecumseth",
-      stratified_area: "Alliston/Breadford",
-    },
+    { name: "Alliston", municipality: "New Tecumseth", stratified_area: "Alliston/Breadford" },
     { name: "Angus", municipality: "Essa", stratified_area: "Barrie" },
     { name: "Barrie", municipality: "Barrie", stratified_area: "Barrie" },
-    {
-      name: "Bradford",
-      municipality: "bradford West Gwillimbury",
-      stratified_area: "Alliston/Breadford",
-    },
-    {
-      name: "Collingwood",
-      municipality: "Collingwood",
-      stratified_area: "Collingwood",
-    },
-    {
-      name: "Friday Harbour",
-      municipality: "Innisfil",
-      stratified_area: "Barrie",
-    },
+    { name: "Bradford", municipality: "bradford West Gwillimbury", stratified_area: "Alliston/Breadford" },
+    { name: "Collingwood", municipality: "Collingwood", stratified_area: "Collingwood" },
+    { name: "Friday Harbour", municipality: "Innisfil", stratified_area: "Barrie" },
     { name: "Innisfil", municipality: "Innisfil", stratified_area: "Barrie" },
     { name: "Midland", municipality: "Midland", stratified_area: "Midland" },
     { name: "Orillia", municipality: "Orillia", stratified_area: "Orillia" },
-    {
-      name: "Tottenham",
-      municipality: "New Tecumseth",
-      stratified_area: "Alliston/Breadford",
-    },
-    {
-      name: "Wasaga",
-      municipality: "Wasage Beach",
-      stratified_area: "Collingwood",
-    },
+    { name: "Tottenham", municipality: "New Tecumseth", stratified_area: "Alliston/Breadford" },
+    { name: "Wasaga", municipality: "Wasage Beach", stratified_area: "Collingwood" },
   ];
 
-  await cities.forEach(async (city) => {
+  console.log(`fetching data for all the cities... please wait...`);
+  for (const city of cities) {
     const url = `https://www.agsecure.ca/listings/${city.name}/`;
     await agSecureFetch1(url, baseURL, city);
+  }
 
-    objectIds.forEach(async (id) => {
-      let tempObj = await AgSecureListings.findById(id);
-      //perform another fertch on full listing and grab the rest of the data
-      //console.log(`${tempObj.listingURL}`);
-      //agSecureFetch2(tempObj.listingURL);
-    });
-  });
 
- 
-  
+  console.log(`DONE - fetching data for all the cities...`);
+  console.log(`fetching Secondary data for all new OBJS`);
+
+  for (const id of objectIds) {
+    let tempObj = await AgSecureListings.findById(id);
+    //perform another fertch on full listing and grab the rest of the data
+    await agSecureFetch2(tempObj.listingURL, tempObj._id);
+  }
+
+
+  console.log(`DONE - fetching Secondary data for all new OBJS`);
 };
 let objectIds = [];
 
 let agSecureFetch1 = async (url, baseUrl, city) => {
-  try { 
+  try {
     const response = await axios.get(url);
     ////console.log(response);
     const $ = cheerio.load(response.data);
@@ -132,12 +115,12 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
       let adLink = `${baseUrl}${$(noOfProperties[i].children[3].children[9].children[3].children[0]).attr("href")}`;
 
 
-      console.log(`numberOfBedrooms: ${numberOfBedrooms}`);
-      console.log(`unitSize: ${unitSize} `);
-      console.log(address);
-      console.log(`price: ${priceDollars}`);
-      console.log(`period ${period}`);
-      console.log(`adLink  ${adLink}`);
+      //console.log(`numberOfBedrooms: ${numberOfBedrooms}`);
+      //console.log(`unitSize: ${unitSize} `);
+      //console.log(address);
+      //console.log(`price: ${priceDollars}`);
+      //console.log(`period ${period}`);
+      //console.log(`adLink  ${adLink}`);
 
       // populate object from noOfProperties[i]
       let tempObject = {
@@ -167,8 +150,8 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
       objectIds = [tempDBoBJ._id, ...objectIds];
     }
     //console.log(objectIds.length);
-// loop through object IDS and do a model lookup based on that id. then find the corresponding listingURL 
-// from the object and perform another fetch to fill in the rest of the data on the correct object
+    // loop through object IDS and do a model lookup based on that id. then find the corresponding listingURL 
+    // from the object and perform another fetch to fill in the rest of the data on the correct object
 
 
 
@@ -181,17 +164,25 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
   }
 };
 
-let agSecureFetch2 = async (url) => {
+let agSecureFetch2 = async (url, id) => {
   const response = await axios.get(url);
-    ////console.log(response);
-    const $ = cheerio.load(response.data);
-    ////console.log($);
-    const listingleftDiv = $(".listing-left");
-    const listingRightDiv = $(".listing-map");
-    
-   // console.log(listingleftDiv);
-    //console.log(listingRightDiv);
-}
+  ////console.log(response);
+  const $ = cheerio.load(response.data);
+  ////console.log($);
+  const listingleftDiv = $(".listing-left");
+  const listingRightDiv = $(".listing-map");
+  // get db object 
+  let dbObj = await AgSecureListings.findById(id);
+  console.log(`before: ${dbObj}`)
+  dbObj.location.geolocation = `test`; // in 3rd script of map = start_lat / start_long // from 2nd listing page
+  dbObj.description = `test`; // from 2nd listing page
+  dbObj.utilities.included = 'test';  // from 2nd listing page
+  dbObj.utilities.additional = 'test';  // from 2nd listing page
+  dbObj.avaibility = `${''}`;// from 2nd listing page
+  dbObj.screenshot = ``; // puppeteer or ?
+  console.log(`after: ${dbObj}`);
+  AgSecureListings.findByIdAndUpdate(id, dbObj);
+};
 
 module.exports = router;
 
