@@ -5,6 +5,49 @@ const puppeteer = require("puppeteer");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
+const AWS = require('aws-sdk');
+
+const s3 = new AWS.S3({
+  accessKeyId: "AKIASWDEI5KKSVZIYCST",
+  secretAccessKey: "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",
+});
+
+const BUCKET = 'ahcl-screenshots';
+
+const uploadFile = (filePath, keyName) => {
+  return new Promise((resolve, reject) => {
+    try {
+      var fs = require('fs');
+      const file = fs.readFileSync(filePath);
+      const BUCKET = 'ahcl-screenshots';
+
+      const uploadParams = {
+        Bucket: BUCKET,
+        Key: keyName,
+        Body: file
+      };
+
+      s3.upload(uploadParams, function (err, data) {
+        if (err) {
+          return reject(err);
+        }
+        if (data) {
+          return resolve(data);
+        }
+      });
+    } catch (err) {
+      return reject(err);
+    }
+  })
+};
+//how to upload
+//call('filepath','key');
+//uploadFile('C:/Users/kyled/Documents/Waverly Menu/menuFiles/Assets/menuBackground.jpg', 'menuBackground.jpg');
+//how to get
+
+
+
+
 var router = express.Router();
 //let rentalData = require('../../public/json/rentalData.json')
 const RentalData = require("../../models/rentalData");
@@ -13,17 +56,56 @@ const Municipality = require("../../models/municipality");
 const StratifiedArea = require("../../models/stratifiedArea");
 const UnitSize = require("../../models/unitSize");
 const AgSecureListings = require("../../models/agSecureListings");
+const { error } = require("console");
 
 /* GET home page. */
 router.get("/", async function (req, res, next) {
 
-const rentalDataSet = new Set();
 
-  let rentalData = await RentalData.find({});
-  setTimeout(() => {
-    //console.log("i ran");
-    res.status(200).json(rentalData);
-  }, 90000);
+
+  var list = [];
+
+  let agrentalData = await AgSecureListings.find({});
+
+  for (const listing of agrentalData) {
+    let tempObj = {
+      "Collected From": listing.source,
+      "address": listing.location.address,
+      "Geo-location": listing.location.geolocation,
+      "No. of Bedrooms": listing.bedrooms,
+      "Rent": listing.rent,
+      "Payment Period": listing.rentFrequency,
+      "Unit Size": listing.unitSize,
+      "Description": listing.description,
+      "utilities Included": listing.utilities.included,
+      "utilities Extra": listing.utilities.additional,
+      "avaibility": listing.avaibility
+    }
+
+
+
+
+
+
+
+
+
+
+    await list.push(JSON.stringify(tempObj));
+  }
+  console.log(list)
+  var uniqueListSet = new Set(list);
+  console.log(uniqueListSet);
+
+  var uniqueListObj = JSON.parse(JSON.stringify(Array.from(uniqueListSet)));
+
+  //console.log(uniqueListObj);
+  res.status(200).json(uniqueListObj);
+
+  /* setTimeout(() => {
+    console.log("i ran"); console.log({ ...rentalDataSet });
+    
+  }, 1000); */
 });
 
 router.post("/sample", async (req, res, next) => {
@@ -78,7 +160,15 @@ let getAGSecureData = async () => {
   for (const id of objectIds) {
     let tempObj = await AgSecureListings.findById(id);
     //perform another fertch on full listing and grab the rest of the data
-    await agSecureFetch2(tempObj.listingURL, tempObj._id);
+    try {
+      await agSecureFetch2(tempObj.listingURL, tempObj._id);
+    } catch (error) {
+      console.error(error);
+      // Expected output: ReferenceError: nonExistentFunction is not defined
+      // (Note: the exact output may be browser-dependent)
+    }
+
+
   }
 
 
@@ -107,7 +197,9 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
       );
       let period = priceSpan.slice(indexOfPer + 4);
       let address = $(noOfProperties[i].children[3].children[1].children[0]).text();
+      address = address.trim();
       let unitSize = $(noOfProperties[i].children[3].children[9].children).text();
+      unitSize = unitSize.replace(/\s+/g, ' ').replace(' READ MORE', '').trim();
       let pttrn = /^\s*/;
       let spacesBeforeText = String(unitSize).match(pttrn)[0].length;
       let numberOfBedrooms = unitSize.slice(spacesBeforeText, spacesBeforeText + 1);
@@ -146,16 +238,32 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
         screenshot: ``, // puppeteer or ?
       };
       // create a new database record
-      let tempDBoBJ = await AgSecureListings.create(tempObject);
-      objectIds = [tempDBoBJ._id, ...objectIds];
+      // let tempDBoBJ = await AgSecureListings.create(tempObject);
+
+      // this is where we should check if this listing already exists in the databse, and if it does update that record instead of creating 
+      //a new one and return that objects id to the objectId array instead of a new object for it to check it listing page to also update the secondary columns
+      try {
+        let tempFetch = await AgSecureListings.findOne({ 'location.address': address });
+        if (tempFetch.length > 0) {
+          await AgSecureListings.findByIdAndUpdate(tempFetch._id, tempObject);
+          objectIds = [tempFetch._id, ...objectIds];
+        }
+        else {
+          return error;
+        }
+      }
+      catch {
+        let tempDBoBJ = await new AgSecureListings(tempObject).save();
+        objectIds = [tempDBoBJ._id, ...objectIds];
+      }
+
+
+
+
     }
     //console.log(objectIds.length);
     // loop through object IDS and do a model lookup based on that id. then find the corresponding listingURL 
     // from the object and perform another fetch to fill in the rest of the data on the correct object
-
-
-
-
 
 
   } catch (e) {
@@ -165,23 +273,85 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
 };
 
 let agSecureFetch2 = async (url, id) => {
+  //function level consts
   const response = await axios.get(url);
-  ////console.log(response);
   const $ = cheerio.load(response.data);
-  ////console.log($);
-  const listingleftDiv = $(".listing-left");
-  const listingRightDiv = $(".listing-map");
-  // get db object 
-  let dbObj = await AgSecureListings.findById(id);
-  console.log(`before: ${dbObj}`)
-  dbObj.location.geolocation = `test`; // in 3rd script of map = start_lat / start_long // from 2nd listing page
-  dbObj.description = `test`; // from 2nd listing page
-  dbObj.utilities.included = 'test';  // from 2nd listing page
-  dbObj.utilities.additional = 'test';  // from 2nd listing page
-  dbObj.avaibility = `${''}`;// from 2nd listing page
-  dbObj.screenshot = ``; // puppeteer or ?
-  console.log(`after: ${dbObj}`);
-  AgSecureListings.findByIdAndUpdate(id, dbObj);
+  const listingLeft = $(".listing-left");
+  const listingMaps = $(".listing-map");
+
+  //function level vars
+  let description;
+  let avaibility;
+  let UtilitiesIncluded;
+  let AdditionalUtilities = [];
+  let lat;
+  let long;
+
+  // to get geolocation
+  for (let i = 0; i < listingMaps.length; i++) {
+    let listingMapScripts = $(listingMaps[i]).children('script');
+    let scriptText = $(listingMapScripts[2]).html();
+    let indexOfLatStart = scriptText.indexOf('var start_lat = ');
+    let indexOfLatEnd = scriptText.indexOf(';', indexOfLatStart);
+    let indexOfLongStart = scriptText.indexOf('var start_long = ');
+    let indexOfLongEnd = scriptText.indexOf(';', indexOfLongStart);
+    lat = scriptText.slice(indexOfLatStart + 16, indexOfLatEnd);
+    long = scriptText.slice(indexOfLongStart + 17, indexOfLongEnd);
+  }
+
+
+
+  for (let i = 0; i < listingLeft.length; i++) {
+    // to get description
+    let listingDescription = String($(listingLeft[i]).text());
+    description = listingDescription;
+    description = description.replace(/\s+/g, ' ').trim();
+    //Availability
+    let indexOfAvailable = listingDescription.indexOf(`Available`);
+    let indexOfAvailableEnd = listingDescription.indexOf(`\n`, indexOfAvailable + 10);
+    avaibility = listingDescription.slice(indexOfAvailable + 10, indexOfAvailableEnd).replace(/^\s+|\s+$/g, '');
+    avaibility == '' ? avaibility = 'Unknown' : avaibility;
+
+    //utilities Included?
+    let indexOfUtilitiesIncluded = listingDescription.indexOf(`Utilities Included`);
+    UtilitiesIncluded = indexOfUtilitiesIncluded == -1 ? false : true;
+
+    //utilities Additional   additional
+    let indexOfPlusHeat = listingDescription.indexOf(`Plus Heat`);
+    let indexOfPlusWater = listingDescription.indexOf(`Plus Water`);
+    let indexOfPlusHydro = listingDescription.indexOf(`Plus Hydro`);
+    indexOfPlusHeat == -1 ? AdditionalUtilities.push('Plus Heat') : null;
+    indexOfPlusWater == -1 ? AdditionalUtilities.push('Plus Water') : null;
+    indexOfPlusHydro == -1 ? AdditionalUtilities.push('Plus Hydro') : null;
+  }
+
+  // get & update db object 
+  await AgSecureListings.findById(id).then((dbObj) => {
+    dbObj.location.geolocation = `${lat == "" ? lat = "0" : lat},${long == "" ? long = "0" : long}`; // in 3rd script of map = start_lat / start_long // from 2nd listing page
+
+    dbObj.description = description.replace(dbObj.unitSize, '').replace('EMAIL US TENANT APPLICATION', ''); // from 2nd listing page
+    //cleaning the description of extra stuff 
+    let indexOfRent = dbObj.description.indexOf('Rent $');
+    dbObj.description = dbObj.description.slice(0, indexOfRent == -1 ? dbObj.description.length : indexOfRent);
+    let indexOfRent2 = dbObj.description.indexOf('Rent:');
+    dbObj.description = dbObj.description.slice(0, indexOfRent2 == -1 ? dbObj.description.length : indexOfRent2);
+    let indexOfIfInterested = dbObj.description.indexOf('IF INTERESTED PLEASE SEND US AN EMAIL AT');
+    dbObj.description = dbObj.description.slice(0, indexOfIfInterested == -1 ? dbObj.description.length : indexOfIfInterested);
+    let indexOfAvailable = dbObj.description.indexOf(`Available`);
+    dbObj.description = dbObj.description.slice(0, indexOfAvailable == -1 ? dbObj.description.length : indexOfAvailable);
+    let indexOfAvailable2 = dbObj.description.indexOf(`Available:`);
+    dbObj.description = dbObj.description.slice(0, indexOfAvailable2 == -1 ? dbObj.description.length : indexOfAvailable2);
+
+    dbObj.utilities.included = UtilitiesIncluded;  // from 2nd listing page
+    dbObj.utilities.additional = AdditionalUtilities;  // from 2nd listing page
+    dbObj.avaibility = String(avaibility);// from 2nd listing page
+    dbObj.screenshot = `https://ahcl-screenshots.s3.us-east-2.amazonaws.com/menuBackground.jpg`; // puppeteer or ?
+    return dbObj;
+  })
+    .then(async (dbObj) => {
+      await AgSecureListings.findByIdAndUpdate(id, dbObj);
+      //console.log(await AgSecureListings.findById(dbObj.id));
+    });
 };
 
 module.exports = router;
