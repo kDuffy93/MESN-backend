@@ -219,9 +219,11 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
         source: `${baseUrl}`,
         listingURL: `${adLink}`,
         dateCollected: Date.now(),
+        LastUpdated: Date.now(),
+        updated: false,
         location: {
-          stratifiedArea: `${city.stratified_area}`,
-          municipality: `${city.municipality}`,
+          stratifiedAreas: [`${city.stratified_area}`],
+          municipalities: [`${city.municipality}`],
           address: `${address}`,
           geolocation: `44.3894,-79.6903`, // in 3rd script of map = start_lat / start_long // from 2nd listing page
         },
@@ -244,15 +246,31 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
       //a new one and return that objects id to the objectId array instead of a new object for it to check it listing page to also update the secondary columns
       try {
         let tempFetch = await AgSecureListings.findOne({ 'location.address': address });
-        if (tempFetch.length > 0) {
-          await AgSecureListings.findByIdAndUpdate(tempFetch._id, tempObject);
-          objectIds = [tempFetch._id, ...objectIds];
+        console.log(tempFetch._id);
+        if (tempFetch._id !== undefined) {
+          // get & update db object 
+          await AgSecureListings.findById(tempFetch._id)
+            .then( async(dbObj) => {
+              dbObj.dateCollected = tempFetch.dateCollected;
+              dbObj.listingURL = tempObject.listingURL;
+              dbObj.updated = true;
+              dbObj.LastUpdated = Date.now();
+              dbObj.location.stratifiedAreas = Array.from(new Set([...dbObj.location.stratifiedAreas, ...tempObject.location.stratifiedAreas]));
+              dbObj.location.municipalities = Array.from(new Set([...dbObj.location.municipalities, ...tempObject.location.municipalities]));
+              dbObj.bedrooms = tempObject.bedrooms;
+              dbObj.rent = tempObject.rent;
+              dbObj.rentFrequency = tempObject.rentFrequency;
+              dbObj.unitSize = tempObject.unitSize;
+              await AgSecureListings.findOneAndUpdate(tempFetch._id, dbObj);
+              objectIds = [tempFetch._id, ...objectIds];
+            });
         }
         else {
-          return error;
+          throw new Error('No matching record found, throwing error and creating one from catch instead');
         }
       }
-      catch {
+      catch (error){
+        console.log(error)
         let tempDBoBJ = await new AgSecureListings(tempObject).save();
         objectIds = [tempDBoBJ._id, ...objectIds];
       }
