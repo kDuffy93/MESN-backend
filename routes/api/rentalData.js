@@ -69,16 +69,16 @@ router.get("/", async function (req, res, next) {
 
   for (const listing of agrentalData) {
     let tempObj = {
-      "Collected From": listing.source,
+      "collectedFrom": listing.source,
       "address": listing.location.address,
-      "Geo-location": listing.location.geolocation,
-      "No. of Bedrooms": listing.bedrooms,
-      "Rent": listing.rent,
-      "Payment Period": listing.rentFrequency,
-      "Unit Size": listing.unitSize,
-      "Description": listing.description,
-      "utilities Included": listing.utilities.included,
-      "utilities Extra": listing.utilities.additional,
+      "geolocation": listing.location.geolocation,
+      "bedrooms": listing.bedrooms,
+      "rent": listing.rent,
+      "rentFrequency": listing.rentFrequency,
+      "unitSize": listing.unitSize,
+      "description": listing.description,
+      "utilitiesIncluded": listing.utilities.included,
+      "utilitiesAdditional": listing.utilities.additional,
       "avaibility": listing.avaibility
     }
 
@@ -233,7 +233,7 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
         unitSize: `${unitSize}`,
         description: ``, // from 2nd listing page
         utilities: { // from 2nd listing page
-          included: `${true}`,// from 2nd listing page
+          included: 'unknown',// from 2nd listing page
           additional: [],// from 2nd listing page
         },
         avaibility: `${''}`,// from 2nd listing page
@@ -332,7 +332,7 @@ let agSecureFetch2 = async (url, id) => {
 
     //utilities Included?
     let indexOfUtilitiesIncluded = listingDescription.indexOf(`Utilities Included`);
-    UtilitiesIncluded = indexOfUtilitiesIncluded == -1 ? false : true;
+    UtilitiesIncluded = indexOfUtilitiesIncluded == -1 ? 'No' : 'Yes';
 
     //utilities Additional   additional
     let indexOfPlusHeat = listingDescription.indexOf(`Plus Heat`);

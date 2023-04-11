@@ -18,7 +18,7 @@ const rentalListingSchema = new mongoose.Schema({
   unitSize: { type: String, required: true }, //}
   description: { type: String }, // open text field for poster-provided descriptions
   utilities: {
-    included: { type: Boolean, required: true}, // are utilities included
+    included: { type: String, required: true}, // are utilities included
     additional: { type: Array }, // which additional utilities are required to be paid for by the tenant
   },
   avaibility: { type: String}, // when is the lease available to sign
