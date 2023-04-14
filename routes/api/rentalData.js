@@ -57,7 +57,7 @@ const StratifiedArea = require("../../models/stratifiedArea");
 const UnitSize = require("../../models/unitSize");
 const AgSecureListings = require("../../models/agSecureListings");
 const { error } = require("console");
-
+let objectIds = [];
 /* GET home page. */
 router.get("/", async function (req, res, next) {
 
@@ -71,6 +71,8 @@ router.get("/", async function (req, res, next) {
     let tempObj = {
       "collectedFrom": listing.source,
       "address": listing.location.address,
+      "area": listing.location.stratifiedArea,
+      "municipality": listing.location.municipality,
       "geolocation": listing.location.geolocation,
       "bedrooms": listing.bedrooms,
       "rent": listing.rent,
@@ -81,21 +83,11 @@ router.get("/", async function (req, res, next) {
       "utilitiesAdditional": listing.utilities.additional,
       "avaibility": listing.avaibility
     }
-
-
-
-
-
-
-
-
-
-
     await list.push(JSON.stringify(tempObj));
   }
-  console.log(list)
+  //console.log(list)
   var uniqueListSet = new Set(list);
-  console.log(uniqueListSet);
+ // console.log(uniqueListSet);
 
   var uniqueListObj = JSON.parse(JSON.stringify(Array.from(uniqueListSet)));
 
@@ -109,72 +101,43 @@ router.get("/", async function (req, res, next) {
 });
 
 router.post("/sample", async (req, res, next) => {
-  // create a new user from the query parameters
-  /* let randomNumber = Math.random() * 1000000;
-  await RentalData.create({
-    stratifiedArea: `Alliston/Bradford ${randomNumber}`,
-    municipality: `Bradford West`,
-    streetNumber: 280,
-    streetName: `MILLER PARK AVE`,
-    housingType: `House`,
-    unitSize: `2 Bedrooms`,
-    secondarySuite: true,
-    monthlyRent: 2300,
-    utilitiesIncluded: true,
-    landlordType: `Private`,
-    stability: `Over 1 year`,
-  });
-  let rentalData = await RentalData.find({});
-  //console.log("i ran after posting");
-  res.status(200).json(rentalData); */
-  //console.log("i ran after posting at sample");
   getAGSecureData();
 });
 
 let getAGSecureData = async () => {
   let baseURL = "https://www.agsecure.ca";
   const cities = [
-    { name: "Alliston", municipality: "New Tecumseth", stratified_area: "Alliston/Breadford" },
-    { name: "Angus", municipality: "Essa", stratified_area: "Barrie" },
-    { name: "Barrie", municipality: "Barrie", stratified_area: "Barrie" },
-    { name: "Bradford", municipality: "bradford West Gwillimbury", stratified_area: "Alliston/Breadford" },
-    { name: "Collingwood", municipality: "Collingwood", stratified_area: "Collingwood" },
-    { name: "Friday Harbour", municipality: "Innisfil", stratified_area: "Barrie" },
-    { name: "Innisfil", municipality: "Innisfil", stratified_area: "Barrie" },
-    { name: "Midland", municipality: "Midland", stratified_area: "Midland" },
-    { name: "Orillia", municipality: "Orillia", stratified_area: "Orillia" },
-    { name: "Tottenham", municipality: "New Tecumseth", stratified_area: "Alliston/Breadford" },
-    { name: "Wasaga", municipality: "Wasage Beach", stratified_area: "Collingwood" },
-  ];
+    { endPoint: "Alliston", municipality: "New Tecumseth", stratifiedArea: "Alliston/Breadford" },
+    { endPoint: "Angus", municipality: "Essa", stratifiedArea: "Barrie" },
+    { endPoint: "Barrie", municipality: "Barrie", stratifiedArea: "Barrie" },
+    { endPoint: "Bradford", municipality: "bradford West Gwillimbury", stratifiedArea: "Alliston/Bradford" },
+    { endPoint: "Collingwood", municipality: "Collingwood", stratifiedArea: "Collingwood" },
+    { endPoint: "friday-harbour", municipality: "Innisville", stratifiedArea: "Barrie" },
+    { endPoint: "Innisfil", municipality: "Innisfil", stratifiedArea: "Barrie" },
+    { endPoint: "Midland", municipality: "Midland", stratifiedArea: "Midland" },
+    { endPoint: "Orillia", municipality: "Orillia", stratifiedArea: "Orillia" },
+    { endPoint: "Wasaga", municipality: "Wasaga Beach", stratifiedArea: "Collingwood" }];
 
   console.log(`fetching data for all the cities... please wait...`);
+
   for (const city of cities) {
-    const url = `https://www.agsecure.ca/listings/${city.name}/`;
+    const url = `https://www.agsecure.ca/listings/${city.endPoint}/`;
     await agSecureFetch1(url, baseURL, city);
   }
-
 
   console.log(`DONE - fetching data for all the cities...`);
   console.log(`fetching Secondary data for all new OBJS`);
 
   for (const id of objectIds) {
     let tempObj = await AgSecureListings.findById(id);
-    //perform another fertch on full listing and grab the rest of the data
-    try {
-      await agSecureFetch2(tempObj.listingURL, tempObj._id);
-    } catch (error) {
-      console.error(error);
-      // Expected output: ReferenceError: nonExistentFunction is not defined
-      // (Note: the exact output may be browser-dependent)
-    }
-
-
+    //perform another fetch on full listing and grab the rest of the data
+      if(tempObj.listingURL){
+        await agSecureFetch2(tempObj.listingURL, tempObj._id);
+      }
   }
-
-
   console.log(`DONE - fetching Secondary data for all new OBJS`);
 };
-let objectIds = [];
+
 
 let agSecureFetch1 = async (url, baseUrl, city) => {
   try {
@@ -183,7 +146,7 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
     const $ = cheerio.load(response.data);
     ////console.log($);
     const noOfProperties = $(".listing");
-    //console.log(`${noOfProperties.length} are open for rent in ${city.name} in ${city.municipality} in ${city.stratified_area} on ${url}`);
+    //console.log(`${noOfProperties.length} are open for rent in ${city.endPoint} in ${city.municipality} in ${city.stratifiedArea} on ${url}`);
 
     for (let i = 0; i < noOfProperties.length; i++) {
       let priceSpan = $(noOfProperties[i].children[3].children[3]).text();
@@ -222,10 +185,10 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
         LastUpdated: Date.now(),
         updated: false,
         location: {
-          stratifiedAreas: [`${city.stratified_area}`],
-          municipalities: [`${city.municipality}`],
+          stratifiedArea: `${city.stratifiedArea}`,
+          municipality: `${city.municipality}`,
           address: `${address}`,
-          geolocation: `44.3894,-79.6903`, // in 3rd script of map = start_lat / start_long // from 2nd listing page
+          geolocation: `0, 0`, // in 3rd script of map = start_lat / start_long // from 2nd listing page
         },
         bedrooms: `${numberOfBedrooms}`,
         rent: `${priceDollars}`,
@@ -239,24 +202,26 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
         avaibility: `${''}`,// from 2nd listing page
         screenshot: ``, // puppeteer or ?
       };
-      // create a new database record
-      // let tempDBoBJ = await AgSecureListings.create(tempObject);
 
-      // this is where we should check if this listing already exists in the databse, and if it does update that record instead of creating 
-      //a new one and return that objects id to the objectId array instead of a new object for it to check it listing page to also update the secondary columns
+
+
+      //check if this listing already exists in the databse, and if it does update that record
       try {
         let tempFetch = await AgSecureListings.findOne({ 'location.address': address });
         console.log(tempFetch._id);
-        if (tempFetch._id !== undefined) {
-          // get & update db object 
+        if (tempFetch._id == undefined) {
+          throw new Error('No matching record found, throwing error and creating one from catch instead');
+        }
+        else {
+          // get & update db object if there was a matching record
           await AgSecureListings.findById(tempFetch._id)
-            .then( async(dbObj) => {
+            .then(async (dbObj) => {
               dbObj.dateCollected = tempFetch.dateCollected;
               dbObj.listingURL = tempObject.listingURL;
               dbObj.updated = true;
               dbObj.LastUpdated = Date.now();
-              dbObj.location.stratifiedAreas = Array.from(new Set([...dbObj.location.stratifiedAreas, ...tempObject.location.stratifiedAreas]));
-              dbObj.location.municipalities = Array.from(new Set([...dbObj.location.municipalities, ...tempObject.location.municipalities]));
+              dbObj.location.stratifiedArea = Array.from(new Set([...dbObj.location.stratifiedArea, ...tempObject.location.stratifiedArea]));
+              dbObj.location.municipality = Array.from(new Set([...dbObj.location.municipality, ...tempObject.location.municipality]));
               dbObj.bedrooms = tempObject.bedrooms;
               dbObj.rent = tempObject.rent;
               dbObj.rentFrequency = tempObject.rentFrequency;
@@ -265,25 +230,12 @@ let agSecureFetch1 = async (url, baseUrl, city) => {
               objectIds = [tempFetch._id, ...objectIds];
             });
         }
-        else {
-          throw new Error('No matching record found, throwing error and creating one from catch instead');
-        }
-      }
-      catch (error){
-        console.log(error)
+      }// If no matching record is found, create a new database record instead
+      catch {
         let tempDBoBJ = await new AgSecureListings(tempObject).save();
         objectIds = [tempDBoBJ._id, ...objectIds];
       }
-
-
-
-
     }
-    //console.log(objectIds.length);
-    // loop through object IDS and do a model lookup based on that id. then find the corresponding listingURL 
-    // from the object and perform another fetch to fill in the rest of the data on the correct object
-
-
   } catch (e) {
     console.error(`Error while fetching rental properties for ${city} on ${url}`);
     console.error(e);

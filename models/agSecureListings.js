@@ -7,8 +7,8 @@ const rentalListingSchema = new mongoose.Schema({
     LastUpdated: { type: Date, required: true },
     updated:  { type: Boolean, required: true },// date the ad was posted
   location: {
-    stratifiedAreas: { type: Array, required: true }, // local stratified area of rental unit
-    municipalities: { type: Array, required: true }, // local municipality of rental unit
+    stratifiedArea: { type: String, required: true }, // local stratified area of rental unit
+    municipality: { type: String, required: true }, // local municipality of rental unit
     address: { type: String, required: true }, // full address of rental unit
     geolocation: { type: String } // geolocation coordinates if available
   },
