@@ -21,7 +21,7 @@ var loginRouter = require('./routes/api/login');
 //initialize express 
 var app = express();
 //Allow CORS from webistes matching the Origin for the methods defined
-pp.use(cors({
+app.use(cors({
     origin: process.env.CLIENT_URL||'http://localhost:5000',
       methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
   }))
