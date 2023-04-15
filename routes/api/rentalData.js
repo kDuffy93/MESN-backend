@@ -58,13 +58,10 @@ const UnitSize = require("../../models/unitSize");
 const AgSecureListings = require("../../models/agSecureListings");
 const { error } = require("console");
 let objectIds = [];
-/* GET home page. */
+
+/* GET /RentalData  */
 router.get("/", async function (req, res, next) {
-
-
-
   var list = [];
-
   let agrentalData = await AgSecureListings.find({});
 
   for (const listing of agrentalData) {
@@ -85,19 +82,16 @@ router.get("/", async function (req, res, next) {
     }
     await list.push(JSON.stringify(tempObj));
   }
-  //console.log(list)
-  var uniqueListSet = new Set(list);
- // console.log(uniqueListSet);
 
+  //remove duplicated by making a set from the list of stringified objects
+  var uniqueListSet = new Set(list);
+
+  //convert the set back to an array, stringify the array and parse that as json
   var uniqueListObj = JSON.parse(JSON.stringify(Array.from(uniqueListSet)));
 
-  //console.log(uniqueListObj);
+  //send a response code of 200 for ok and respon with json and the object we just made
   res.status(200).json(uniqueListObj);
 
-  /* setTimeout(() => {
-    console.log("i ran"); console.log({ ...rentalDataSet });
-    
-  }, 1000); */
 });
 
 router.post("/sample", async (req, res, next) => {
@@ -107,10 +101,10 @@ router.post("/sample", async (req, res, next) => {
 let getAGSecureData = async () => {
   let baseURL = "https://www.agsecure.ca";
   const cities = [
-    { endPoint: "Alliston", municipality: "New Tecumseth", stratifiedArea: "Alliston/Breadford" },
+    { endPoint: "Alliston", municipality: "New Tecumseth", stratifiedArea: "Bradford" },
     { endPoint: "Angus", municipality: "Essa", stratifiedArea: "Barrie" },
     { endPoint: "Barrie", municipality: "Barrie", stratifiedArea: "Barrie" },
-    { endPoint: "Bradford", municipality: "bradford West Gwillimbury", stratifiedArea: "Alliston/Bradford" },
+    { endPoint: "Bradford", municipality: "bradford West Gwillimbury", stratifiedArea: "Bradford" },
     { endPoint: "Collingwood", municipality: "Collingwood", stratifiedArea: "Collingwood" },
     { endPoint: "friday-harbour", municipality: "Innisville", stratifiedArea: "Barrie" },
     { endPoint: "Innisfil", municipality: "Innisfil", stratifiedArea: "Barrie" },
@@ -131,9 +125,11 @@ let getAGSecureData = async () => {
   for (const id of objectIds) {
     let tempObj = await AgSecureListings.findById(id);
     //perform another fetch on full listing and grab the rest of the data
+    if(tempObj){
       if(tempObj.listingURL){
         await agSecureFetch2(tempObj.listingURL, tempObj._id);
       }
+    }
   }
   console.log(`DONE - fetching Secondary data for all new OBJS`);
 };
