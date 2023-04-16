@@ -67,6 +67,7 @@ router.get("/", async function (req, res, next) {
   for (const listing of agrentalData) {
     let tempObj = {
       "collectedFrom": listing.source,
+      "dateCollected": listing.dateCollected,
       "address": listing.location.address,
       "area": listing.location.stratifiedArea,
       "municipality": listing.location.municipality,
