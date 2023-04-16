@@ -21,7 +21,11 @@ var loginRouter = require('./routes/api/login');
 //initialize express 
 var app = express();
 //Allow CORS from webistes matching the Origin for the methods defined
-app.use(cors());
+
+app.use(cors({
+    origin: process.env.CLIENT_URL||'http://localhost:5000',
+      methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
+  }))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
