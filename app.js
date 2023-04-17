@@ -12,11 +12,14 @@ const config = require("./config/globals");
 //import passport and basic strategiy
 const passport = require("passport")
 const basicStrategy = require('passport-http').BasicStrategy;
+const session = require('express-session');
+
 //import routers from routes folder
 var indexRouter = require('./routes/index');
 var heatMapRouter = require('./routes/api/heatMap');
 var viewDataRouter = require('./routes/api/rentalData');
 var loginRouter = require('./routes/api/login');
+var registerRouter = require('./routes/api/register');
 
 //initialize express 
 var app = express();
@@ -39,7 +42,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // initialization of passport middleware for api authentication
-app.use(passport.initialize());
+// app.use(passport.initialize());
 passport.use(new basicStrategy((username, password, done) => {
     if (username == "loggedInUser" && password == "theirPassword") {
         console.log("authenticated");
@@ -50,6 +53,20 @@ passport.use(new basicStrategy((username, password, done) => {
     }
 }));
 
+app.use(session({
+    secret: process.env.PASSPORT_SECRET,
+    resave: true,
+    saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+const User = require('./models/user');
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 // routes for api
 app.use('/', indexRouter);
@@ -61,6 +78,7 @@ app.use('/login', loginRouter);
 
 
 
+app.use('/register', registerRouter);
 
 // attempt to connect to database
 mongoose
