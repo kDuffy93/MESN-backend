@@ -105,7 +105,7 @@ let getAGSecureData = async () => {
     { endPoint: "Alliston", municipality: "New Tecumseth", stratifiedArea: "Bradford" },
     { endPoint: "Angus", municipality: "Essa", stratifiedArea: "Barrie" },
     { endPoint: "Barrie", municipality: "Barrie", stratifiedArea: "Barrie" },
-    { endPoint: "Bradford", municipality: "bradford West Gwillimbury", stratifiedArea: "Bradford" },
+    { endPoint: "Bradford", municipality: "Bradford West Gwillimbury", stratifiedArea: "Bradford" },
     { endPoint: "Collingwood", municipality: "Collingwood", stratifiedArea: "Collingwood" },
     { endPoint: "friday-harbour", municipality: "Innisville", stratifiedArea: "Barrie" },
     { endPoint: "Innisfil", municipality: "Innisfil", stratifiedArea: "Barrie" },

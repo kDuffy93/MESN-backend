@@ -7,7 +7,7 @@ const AgSecureListings = require("../../models/agSecureListings");
 router.get("/", async function (req, res, next) {
     var list = [];
     let agrentalData = await AgSecureListings.find({});
-  
+
     for (const listing of agrentalData) {
       let tempObj = {
         "collectedFrom": listing.source,
@@ -38,3 +38,16 @@ router.get("/", async function (req, res, next) {
   });
 
 module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+
