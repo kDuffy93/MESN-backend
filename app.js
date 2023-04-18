@@ -85,6 +85,17 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+
+checkAuthenticated = (req, res, next) => {
+    console.log(req.isAuthenticated());
+    if (req.isAuthenticated()) { return next() }
+    else{
+        res.status(401).json({message: 'User is not authenticated'});
+    }
+  }
+
+
+
 // routes for api
 app.use('/', indexRouter);
 app.use('/heatMap', heatMapRouter);

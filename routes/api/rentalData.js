@@ -279,7 +279,7 @@ let agSecureFetch2 = async (url, id) => {
     avaibility = listingDescription.slice(indexOfAvailable + 10, indexOfAvailableEnd).replace(/^\s+|\s+$/g, '');
     avaibility == '' ? avaibility = 'Unknown' : avaibility;
 
-    //utilities Included?
+ //utilities Included?
     let indexOfUtilitiesIncluded = listingDescription.indexOf(`Utilities Included`);
     UtilitiesIncluded = indexOfUtilitiesIncluded == -1 ? 'No' : 'Yes';
 
@@ -287,9 +287,15 @@ let agSecureFetch2 = async (url, id) => {
     let indexOfPlusHeat = listingDescription.indexOf(`Plus Heat`);
     let indexOfPlusWater = listingDescription.indexOf(`Plus Water`);
     let indexOfPlusHydro = listingDescription.indexOf(`Plus Hydro`);
-    indexOfPlusHeat == -1 ? AdditionalUtilities.push('Plus Heat') : null;
-    indexOfPlusWater == -1 ? AdditionalUtilities.push('Plus Water') : null;
-    indexOfPlusHydro == -1 ? AdditionalUtilities.push('Plus Hydro') : null;
+    indexOfPlusHeat != -1 ? AdditionalUtilities.push('Plus Heat') : null;
+    indexOfPlusWater != -1 ? AdditionalUtilities.push('Plus Water') : null;
+    indexOfPlusHydro != -1 ? AdditionalUtilities.push('Plus Hydro') : null;   
+
+    if(indexOfPlusHeat != -1 || indexOfPlusHydro != -1 || indexOfPlusWater != -1){
+      UtilitiesIncluded = 'No';
+    }
+    
+    
   }
 
   // get & update db object 
