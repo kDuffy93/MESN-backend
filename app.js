@@ -8,10 +8,12 @@ var cors = require('cors')
 // import mongoose and db config file
 const mongoose = require("mongoose");
 const config = require("./config/globals");
+const User = require('./models/user');
 
 //import passport and basic strategiy
 const passport = require("passport")
 const basicStrategy = require('passport-http').BasicStrategy;
+const LocalStrategy = require('passport-local').Strategy
 const session = require('express-session');
 
 //import routers from routes folder
@@ -21,14 +23,15 @@ var viewDataRouter = require('./routes/api/rentalData');
 var loginRouter = require('./routes/api/login');
 var registerRouter = require('./routes/api/register');
 
+
 //initialize express 
 var app = express();
 //Allow CORS from webistes matching the Origin for the methods defined
 
 app.use(cors({
-    origin: process.env.CLIENT_URL||'http://localhost:5000',
-      methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
-  }))
+    origin: process.env.CLIENT_URL || 'http://localhost:5000',
+    methods: 'GET,POST,PUT,DELETE,HEAD,OPTIONS'
+}))
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -41,30 +44,44 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
+
+
 // initialization of passport middleware for api authentication
 // app.use(passport.initialize());
-passport.use(new basicStrategy((username, password, done) => {
-    if (username == "loggedInUser" && password == "theirPassword") {
-        console.log("authenticated");
-        return done(null, username);
-    } else {
-        console.log("not authenticated");
-        return done(null, false);
-    }
-}));
+
 
 app.use(session({
-    secret: process.env.PASSPORT_SECRET,
+    secret: 'mesnFrontEndSecret',
     resave: true,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: { secure: true }
 }));
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-const User = require('./models/user');
-passport.use(User.createStrategy());
+let authUser = async (user, password, done) => {
 
+    let authenticated_user = awaitUser.findByUsername(user);
+
+    if (authenticated_user.password == password) {
+        return done(null, authenticated_user)
+    } else {
+        console.log("not authenticated");
+        return done(null, false);
+    }
+}
+
+passport.use(new LocalStrategy(authUser));
+
+
+
+
+
+
+
+passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -94,19 +111,19 @@ mongoose
 
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.use(function (req, res, next) {
+    next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.use(function (err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
 });
 
 module.exports = app;

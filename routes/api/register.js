@@ -8,19 +8,23 @@ const User = require('../../models/user');
 
 
 router.post('/', (req, res) => {
-    User.register(new User({
-            username: req.body.username,
-            password: req.body.password
-        }), 
-        (err, user) => {
+    console.log('post to register')
+    User.register({ username: req.body.username }, req.body.password, function (err, user) {
+        if (err) {
+            res.status(402).json(err);
+        }
+        const authenticate = User.authenticate();
+
+        authenticate(req.body.username, req.body.password, function (err, result) {
             if (err) {
-                console.log(err);
-                res.status(400).json(err);
+                res.status(401).json(err);
             }
-            else {
-                  res.status(200).json(user);
+            if (result) {
+                res.status(200).json(user);
             }
+            // Value 'result' is set to false. The user could not be authenticated since the user is not active
         });
+    });
 });
 
 module.exports = router;
